@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Магазин ТУТРЫБА{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Сайдбар с категориями -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Категории</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for cat in categories %}
+                        <a href="{% url 'products:category_detail' cat.slug %}" 
+                           class="list-group-item list-group-item-action {% if cat.id == category.id %}active{% endif %}">
+                            {{ cat.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Список товаров -->
+        <div class="col-md-9">
+            <h2>{{ category.name }}</h2>
+            {% if category.description %}
+                <p class="text-muted">{{ category.description }}</p>
+            {% endif %}
+
+            <div class="row">
+                {% for product in products %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">{{ product.description|truncatewords:20 }}</p>
+                            <p class="card-text"><strong>Цена: {{ product.price }} ₽</strong></p>
+                            <form action="{% url 'cart:add_to_cart' product.id %}" method="post" class="add-to-cart-form" data-product-id="{{ product.id }}">
+                                {% csrf_token %}
+                                <div class="input-group mb-3">
+                                    <button type="button" class="btn btn-outline-secondary decrease-quantity">-</button>
+                                    <input type="number" name="quantity" class="form-control text-center quantity-input" value="1" min="1" max="{{ product.stock }}" data-max="{{ product.max_order_quantity|default:product.stock }}">
+                                    <button type="button" class="btn btn-outline-secondary increase-quantity">+</button>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">В корзину</button>
+                                </div>
+                            </form>
+                            {% if product.max_order_quantity %}
+                                <small class="text-muted">Макс. количество в заказе: {{ product.max_order_quantity }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p>В данной категории пока нет товаров.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+console.log('JavaScript загружен в category_detail.html');
+
+function showNotification(message, type = 'success') {
+    console.log('Показ уведомления:', message, type);
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    notification.style.zIndex = '9999';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен в category_detail.html');
+    // Обработка поля ввода количества
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        const maxQuantity = parseInt(input.getAttribute('data-max'));
+        
+        input.addEventListener('change', function() {
+            console.log('Изменено значение input');
+            let value = parseInt(this.value);
+            if (value < 1) {
+                this.value = 1;
+            } else if (value > maxQuantity) {
+                this.value = maxQuantity;
+                showNotification(`Максимальное количество товара: ${maxQuantity}`, 'error');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

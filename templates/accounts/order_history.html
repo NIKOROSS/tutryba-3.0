@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}История заказов{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">История заказов</h3>
+                </div>
+                <div class="card-body">
+                    {% if orders %}
+                        {% for order in orders %}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-0">Заказ #{{ order.id }}</h5>
+                                            <small class="text-muted">{{ order.created_at|date:"d.m.Y H:i" }}</small>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <span class="badge {% if order.status == 'pending' %}bg-warning
+                                                              {% elif order.status == 'processing' %}bg-info
+                                                              {% elif order.status == 'completed' %}bg-success
+                                                              {% elif order.status == 'cancelled' %}bg-danger
+                                                              {% endif %}">
+                                                {{ order.get_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Товар</th>
+                                                    <th>Цена</th>
+                                                    <th>Количество</th>
+                                                    <th>Сумма</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in order.items.all %}
+                                                    <tr>
+                                                        <td>{{ item.product.name }}</td>
+                                                        <td>{{ item.price }} ₽</td>
+                                                        <td>{{ item.quantity }}</td>
+                                                        <td>{{ item.get_total_price }} ₽</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                                                    <td><strong>{{ order.get_total_cost }} ₽</strong></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center">
+                            <p>У вас пока нет заказов</p>
+                            <a href="{% url 'products:home' %}" class="btn btn-primary">Перейти к покупкам</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
