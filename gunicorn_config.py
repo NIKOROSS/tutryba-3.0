@@ -1,0 +1,9 @@
+bind = '127.0.0.1:8000'
+workers = 3
+timeout = 120
+max_requests = 1000
+worker_class = 'sync'
+daemon = False
+pidfile = 'gunicorn.pid'
+accesslog = 'access.log'
+errorlog = 'error.log' 

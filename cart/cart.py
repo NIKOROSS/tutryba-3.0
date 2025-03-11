@@ -34,13 +34,9 @@ class Cart:
         self.save()
 
     def save(self):
-        cart_copy = {}
-        for key, value in self.cart.items():
-            cart_copy[key] = {
-                'quantity': value['quantity'],
-                'price': str(value['price']) if isinstance(value['price'], Decimal) else value['price']
-            }
-        self.session[settings.CART_SESSION_ID] = cart_copy
+        self.session[settings.CART_SESSION_ID] = json.loads(
+            json.dumps(self.cart, cls=DecimalEncoder)
+        )
         self.session.modified = True
 
     def remove(self, product):
