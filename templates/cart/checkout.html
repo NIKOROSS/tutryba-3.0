@@ -3,6 +3,112 @@
 
 {% block title %}Оформление заказа{% endblock %}
 
+{% block extra_css %}
+<style>
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payment-option {
+    position: relative;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.payment-option:hover {
+    background-color: #e9ecef;
+    border-color: #0d6efd;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.payment-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.payment-label {
+    display: block;
+    padding: 1rem 1.25rem;
+    margin: 0;
+    font-weight: 500;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.3s ease;
+}
+
+.payment-option input[type="radio"]:checked + .payment-label {
+    color: #0d6efd;
+    font-weight: 600;
+    background-color: #e7f3ff;
+    border-radius: 10px;
+}
+
+.payment-option.selected {
+    border-color: #0d6efd;
+    background-color: #e7f3ff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+}
+
+.payment-option.selected .payment-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.payment-label.disabled {
+    opacity: 0.5;
+    text-decoration: line-through;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.payment-option input[type="radio"]:disabled + .payment-label {
+    opacity: 0.5;
+    text-decoration: line-through;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.form-text strong {
+    color: #495057;
+}
+
+#delivery-result .alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(13, 110, 253, 0.4);
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <h1 class="mb-4">Оформление заказа</h1>
@@ -15,10 +121,109 @@
                     <div class="alert alert-info">
                         Оплата онлайн временно недоступна. Пожалуйста, выберите оплату при получении.
                     </div>
-                    <form method="post">
+                    <form method="post" id="checkout-form">
                         {% csrf_token %}
-                        {{ form|crispy }}
-                        <button type="submit" class="btn btn-primary mt-4">Оформить заказ</button>
+                        
+                                                 <!-- Адрес доставки -->
+                         <div class="mb-4">
+                             <h6 class="form-label fw-bold mb-3">Адрес доставки</h6>
+                             
+                             <div class="row">
+                                 <div class="col-md-6 mb-3">
+                                     <label for="{{ form.city.id_for_label }}" class="form-label">
+                                         {{ form.city.label }} <span class="text-danger">*</span>
+                                     </label>
+                                     {{ form.city }}
+                                 </div>
+                                 <div class="col-md-6 mb-3">
+                                     <label for="{{ form.street.id_for_label }}" class="form-label">
+                                         {{ form.street.label }} <span class="text-danger">*</span>
+                                     </label>
+                                     {{ form.street }}
+                                 </div>
+                             </div>
+                             
+                             <div class="row">
+                                 <div class="col-md-4 mb-3">
+                                     <label for="{{ form.house.id_for_label }}" class="form-label">
+                                         {{ form.house.label }} <span class="text-danger">*</span>
+                                     </label>
+                                     {{ form.house }}
+                                 </div>
+                                 <div class="col-md-4 mb-3">
+                                     <label for="{{ form.entrance.id_for_label }}" class="form-label">
+                                         {{ form.entrance.label }}
+                                     </label>
+                                     {{ form.entrance }}
+                                     <div class="form-text">Не обязательно</div>
+                                 </div>
+                                 <div class="col-md-4 mb-3">
+                                     <label for="{{ form.apartment.id_for_label }}" class="form-label">
+                                         {{ form.apartment.label }}
+                                     </label>
+                                     {{ form.apartment }}
+                                     <div class="form-text">Не обязательно</div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         <!-- Кнопка расчета доставки -->
+                         <div class="mb-4">
+                             <button type="button" id="calculate-delivery-btn" class="btn btn-outline-primary">
+                                 <i class="fas fa-calculator"></i> Рассчитать доставку
+                             </button>
+                             <div id="delivery-result" class="mt-2"></div>
+                         </div>
+                         
+                         <!-- Телефон -->
+                         <div class="mb-4">
+                             <label for="{{ form.phone.id_for_label }}" class="form-label fw-bold">
+                                 {{ form.phone.label }} <span class="text-danger">*</span>
+                             </label>
+                             {{ form.phone }}
+                             <div class="form-text">Номер для связи с курьером</div>
+                         </div>
+                         
+                         <!-- Комментарий -->
+                         <div class="mb-4">
+                             <label for="{{ form.comment.id_for_label }}" class="form-label fw-bold">
+                                 {{ form.comment.label }}
+                             </label>
+                             {{ form.comment }}
+                             <div class="form-text">Дополнительная информация для курьера (не обязательно)</div>
+                         </div>
+                         
+                                                  <!-- Способ оплаты -->
+                         <div class="mb-4">
+                             <label class="form-label fw-bold">{{ form.payment_method.label }}</label>
+                             <div class="mt-2">
+                                 <div class="payment-options">
+                                     <div class="payment-option">
+                                         <input type="radio" name="payment_method" value="online" id="payment_online" disabled>
+                                         <label for="payment_online" class="payment-label disabled">
+                                             <i class="fas fa-credit-card me-2"></i>
+                                             Оплата онлайн
+                                         </label>
+                                     </div>
+                                     <div class="payment-option">
+                                         <input type="radio" name="payment_method" value="cash" id="payment_cash" checked>
+                                         <label for="payment_cash" class="payment-label">
+                                             <i class="fas fa-money-bill-wave me-2"></i>
+                                             Оплата при получении
+                                         </label>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         {{ form.delivery_cost }}
+                         
+                         <!-- Кнопка оформления заказа -->
+                         <div class="mt-4 pt-3 border-top">
+                             <button type="submit" class="btn btn-primary btn-lg w-100">
+                                 <i class="fas fa-shopping-cart me-2"></i>Оформить заказ
+                             </button>
+                         </div>
                     </form>
                 </div>
             </div>
@@ -35,9 +240,18 @@
                         </div>
                     {% endfor %}
                     <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Товары:</span>
+                        <span>{{ cart.get_total_price }} ₽</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" id="delivery-cost-row" style="display: none;">
+                        <span>Доставка:</span>
+                        <span id="delivery-cost">0 ₽</span>
+                    </div>
+                    <hr>
                     <div class="d-flex justify-content-between">
                         <strong>Итого:</strong>
-                        <strong>{{ cart.get_total_price }} ₽</strong>
+                        <strong id="total-with-delivery">{{ cart.get_total_price }} ₽</strong>
                     </div>
                 </div>
             </div>
@@ -47,19 +261,124 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Находим радиокнопку для онлайн-оплаты
-    const onlinePaymentRadio = document.querySelector('input[type="radio"][value="online"]');
-    if (onlinePaymentRadio) {
-        // Делаем её неактивной
-        onlinePaymentRadio.disabled = true;
-        onlinePaymentRadio.checked = false;
-        
-        // Выбираем оплату при получении по умолчанию
-        const cashPaymentRadio = document.querySelector('input[type="radio"][value="cash"]');
-        if (cashPaymentRadio) {
-            cashPaymentRadio.checked = true;
-        }
+    // Добавляем обработчики для кастомных радиокнопок
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    
+    paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio && !radio.disabled) {
+                // Снимаем выделение со всех опций
+                paymentOptions.forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Выделяем выбранную опцию
+                this.classList.add('selected');
+                radio.checked = true;
+            }
+        });
+    });
+    
+    // Выделяем активную опцию по умолчанию
+    const activeOption = document.querySelector('.payment-option input[type="radio"]:checked');
+    if (activeOption) {
+        activeOption.closest('.payment-option').classList.add('selected');
     }
+    
+         // Обработка расчета доставки
+     const calculateBtn = document.getElementById('calculate-delivery-btn');
+     const deliveryResult = document.getElementById('delivery-result');
+     const deliveryCostInput = document.getElementById('{{ form.delivery_cost.id_for_label }}');
+     const deliveryCostRow = document.getElementById('delivery-cost-row');
+     const deliveryCostSpan = document.getElementById('delivery-cost');
+     const totalWithDelivery = document.getElementById('total-with-delivery');
+     
+     // Поля адреса
+     const cityField = document.getElementById('{{ form.city.id_for_label }}');
+     const streetField = document.getElementById('{{ form.street.id_for_label }}');
+     const houseField = document.getElementById('{{ form.house.id_for_label }}');
+     const entranceField = document.getElementById('{{ form.entrance.id_for_label }}');
+     const apartmentField = document.getElementById('{{ form.apartment.id_for_label }}');
+     
+     calculateBtn.addEventListener('click', function() {
+         const city = cityField.value.trim();
+         const street = streetField.value.trim();
+         const house = houseField.value.trim();
+         const entrance = entranceField.value.trim();
+         const apartment = apartmentField.value.trim();
+         
+         if (!city || !street || !house) {
+             deliveryResult.innerHTML = '<div class="alert alert-warning">Заполните обязательные поля: город, улица, дом</div>';
+             return;
+         }
+         
+         calculateBtn.disabled = true;
+         calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Расчет...';
+         deliveryResult.innerHTML = '';
+         
+         // Формируем данные для отправки
+         const formData = new FormData();
+         formData.append('city', city);
+         formData.append('street', street);
+         formData.append('house', house);
+         formData.append('entrance', entrance);
+         formData.append('apartment', apartment);
+         
+         fetch('{% url "cart:calculate_delivery" %}', {
+             method: 'POST',
+             headers: {
+                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+             },
+             body: formData
+         })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const deliveryCost = data.cost;
+                const deliveryTime = data.delivery_time;
+                const distance = data.distance;
+                
+                                 deliveryResult.innerHTML = `
+                     <div class="alert alert-success">
+                         <div class="d-flex align-items-center mb-2">
+                             <i class="fas fa-check-circle me-2"></i>
+                             <strong>Стоимость доставки: ${deliveryCost} ₽</strong>
+                         </div>
+                         <div class="row">
+                             <div class="col-md-6">
+                                 <small><i class="fas fa-clock me-1"></i> Время доставки: ${deliveryTime}</small>
+                             </div>
+                             <div class="col-md-6">
+                                 <small><i class="fas fa-route me-1"></i> Расстояние: ${distance} км</small>
+                             </div>
+                         </div>
+                     </div>
+                 `;
+                
+                // Обновляем отображение стоимости
+                deliveryCostInput.value = deliveryCost;
+                deliveryCostRow.style.display = 'flex';
+                deliveryCostSpan.textContent = `${deliveryCost} ₽`;
+                
+                // Обновляем общую сумму
+                const cartTotal = parseFloat('{{ cart.get_total_price }}'.replace(' ₽', ''));
+                const total = cartTotal + deliveryCost;
+                totalWithDelivery.textContent = `${total} ₽`;
+                
+            } else {
+                deliveryResult.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            deliveryResult.innerHTML = '<div class="alert alert-danger">Ошибка расчета доставки</div>';
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            calculateBtn.disabled = false;
+            calculateBtn.innerHTML = '<i class="fas fa-calculator"></i> Рассчитать доставку';
+        });
+    });
 });
 </script>
 {% endblock %} 

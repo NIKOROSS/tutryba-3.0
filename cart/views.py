@@ -7,7 +7,9 @@ from products.models import Product
 from .cart import Cart
 from .forms import CartAddProductForm, OrderForm
 from .models import Order, OrderItem
+from .delivery_service import delivery_service
 from django.db import transaction
+from decimal import Decimal
 
 @require_POST
 def add_cart(request, product_id):
@@ -71,7 +73,33 @@ def checkout(request):
         if form.is_valid():
             order = form.save(commit=False)
             order.user = request.user
-            order.total_amount = cart.get_total_price()
+            
+            # Добавляем стоимость доставки к общей сумме
+            delivery_cost = form.cleaned_data.get('delivery_cost', 0)
+            cart_total = cart.get_total_price()
+            
+            # Преобразуем cart_total в Decimal
+            if isinstance(cart_total, str):
+                cart_total = Decimal(cart_total.replace(' ₽', ''))
+            elif isinstance(cart_total, float):
+                cart_total = Decimal(str(cart_total))
+            elif isinstance(cart_total, Decimal):
+                pass  # уже Decimal
+            else:
+                cart_total = Decimal(str(cart_total))
+            
+            # Преобразуем delivery_cost в Decimal
+            if isinstance(delivery_cost, (int, float)):
+                delivery_cost = Decimal(str(delivery_cost))
+            elif isinstance(delivery_cost, str):
+                delivery_cost = Decimal(delivery_cost)
+            elif isinstance(delivery_cost, Decimal):
+                pass  # уже Decimal
+            else:
+                delivery_cost = Decimal('0')
+            
+            order.total_amount = cart_total + delivery_cost
+            
             order.save()
 
             for item in cart:
@@ -83,7 +111,7 @@ def checkout(request):
                 )
 
             cart.clear()
-            messages.success(request, 'Заказ успешно оформлен!')
+            messages.success(request, f'Заказ успешно оформлен! Стоимость доставки: {delivery_cost} ₽')
             return redirect('cart:order_success')
     else:
         form = OrderForm()
@@ -95,3 +123,44 @@ def checkout(request):
 
 def order_success(request):
     return render(request, 'cart/order_success.html')
+
+def calculate_delivery(request):
+    """
+    AJAX представление для расчета стоимости доставки
+    """
+    if request.method == 'POST':
+        # Собираем адрес из отдельных полей
+        city = request.POST.get('city', '').strip()
+        street = request.POST.get('street', '').strip()
+        house = request.POST.get('house', '').strip()
+        entrance = request.POST.get('entrance', '').strip()
+        apartment = request.POST.get('apartment', '').strip()
+        
+        # Формируем полный адрес
+        address_parts = [city, street, f"д. {house}"]
+        if entrance:
+            address_parts.append(f"под. {entrance}")
+        if apartment:
+            address_parts.append(f"кв. {apartment}")
+        
+        delivery_address = ", ".join(address_parts)
+        
+        if not city or not street or not house:
+            return JsonResponse({
+                'success': False,
+                'error': 'Заполните обязательные поля: город, улица, дом'
+            })
+        
+        # Рассчитываем вес заказа (примерно)
+        cart = Cart(request)
+        total_weight = sum(item['quantity'] * 0.5 for item in cart)  # 0.5 кг на единицу товара
+        
+        # Рассчитываем стоимость доставки
+        result = delivery_service.calculate_delivery_cost(delivery_address, total_weight)
+        
+        return JsonResponse(result)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Неверный метод запроса'
+    })

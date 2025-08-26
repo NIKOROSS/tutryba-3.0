@@ -18,17 +18,20 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'status', 'shipping_address', 'phone', 'payment_method', 'total_amount', 'created_at']
+    list_display = ['id', 'user', 'status', 'full_address', 'phone', 'payment_method', 'total_amount', 'created_at']
     list_filter = ['status', 'payment_method', 'created_at']
-    search_fields = ['user__username', 'shipping_address', 'phone']
-    readonly_fields = ['total_amount', 'created_at', 'updated_at']
+    search_fields = ['user__username', 'city', 'street', 'phone']
+    readonly_fields = ['total_amount', 'created_at', 'updated_at', 'full_address']
     list_editable = ['status']
     fieldsets = (
         ('Основная информация', {
             'fields': ('user', 'status', 'payment_method', 'total_amount')
         }),
+        ('Адрес доставки', {
+            'fields': ('city', 'street', 'house', 'entrance', 'apartment', 'full_address')
+        }),
         ('Контактная информация', {
-            'fields': ('shipping_address', 'phone')
+            'fields': ('phone', 'comment')
         }),
         ('Дополнительная информация', {
             'fields': ('created_at', 'updated_at'),

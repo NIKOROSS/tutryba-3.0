@@ -28,9 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["tutriba.ru", "www.tutriba.ru"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "tutriba.ru", "www.tutriba.ru"]
 
 
 # Application definition
@@ -90,6 +90,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'cart.context_processors.cart',
             ],
         },
     },
@@ -103,12 +104,8 @@ WSGI_APPLICATION = 'market.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'shop_db'),
-        'USER': os.getenv('DB_USER', 'user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', '123'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -198,6 +195,10 @@ ACCOUNT_RATE_LIMITS = {
 
 # Cart settings
 CART_SESSION_ID = 'cart'
+
+# Yandex API settings
+YANDEX_DELIVERY_API_KEY = os.getenv('YANDEX_DELIVERY_API_KEY', '')
+YANDEX_GEOCODER_API_KEY = os.getenv('YANDEX_GEOCODER_API_KEY', '')
 
 ACCOUNT_SIGNUP_FORM_CLASS = 'accounts.forms.CustomUserCreationForm'
 

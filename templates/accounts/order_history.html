@@ -23,16 +23,36 @@
                                         </div>
                                         <div class="col-md-6 text-end">
                                             <span class="badge {% if order.status == 'pending' %}bg-warning
-                                                              {% elif order.status == 'processing' %}bg-info
-                                                              {% elif order.status == 'completed' %}bg-success
+                                                              {% elif order.status == 'paid' %}bg-info
+                                                              {% elif order.status == 'shipped' %}bg-primary
+                                                              {% elif order.status == 'delivered' %}bg-success
                                                               {% elif order.status == 'cancelled' %}bg-danger
-                                                              {% endif %}">
+                                                              {% else %}bg-secondary{% endif %}">
                                                 {{ order.get_status_display }}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Информация о заказе -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>Адрес доставки:</strong><br>
+                                            {{ order.full_address }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Телефон:</strong> {{ order.phone }}<br>
+                                            <strong>Способ оплаты:</strong> {{ order.get_payment_method_display }}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if order.comment %}
+                                    <div class="alert alert-info mb-3">
+                                        <strong>Комментарий к заказу:</strong><br>
+                                        {{ order.comment }}
+                                    </div>
+                                    {% endif %}
+                                    
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>

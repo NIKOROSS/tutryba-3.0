@@ -1,13 +1,6 @@
 from decimal import Decimal
 from django.conf import settings
 from products.models import Product
-import json
-
-class DecimalEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Decimal):
-            return str(obj)
-        return super().default(obj)
 
 class Cart:
     def __init__(self, request):
@@ -34,9 +27,7 @@ class Cart:
         self.save()
 
     def save(self):
-        self.session[settings.CART_SESSION_ID] = json.loads(
-            json.dumps(self.cart, cls=DecimalEncoder)
-        )
+        self.session[settings.CART_SESSION_ID] = self.cart
         self.session.modified = True
 
     def remove(self, product):
@@ -48,21 +39,25 @@ class Cart:
     def __iter__(self):
         product_ids = self.cart.keys()
         products = Product.objects.filter(id__in=product_ids)
-        cart = self.cart.copy()
         
         for product in products:
-            cart[str(product.id)]['product'] = product
-            cart[str(product.id)]['price'] = Decimal(cart[str(product.id)]['price'])
-            cart[str(product.id)]['total_price'] = cart[str(product.id)]['price'] * cart[str(product.id)]['quantity']
-            
-        for item in cart.values():
-            yield item
+            product_id = str(product.id)
+            if product_id in self.cart:
+                # Создаем новый словарь для каждого элемента, не изменяя сессию
+                item = {
+                    'product': product,
+                    'quantity': self.cart[product_id]['quantity'],
+                    'price': str(Decimal(self.cart[product_id]['price'])),
+                    'total_price': str(Decimal(self.cart[product_id]['price']) * self.cart[product_id]['quantity'])
+                }
+                yield item
 
     def __len__(self):
         return sum(item['quantity'] for item in self.cart.values())
 
     def get_total_price(self):
-        return sum(Decimal(item['price']) * item['quantity'] for item in self.cart.values())
+        total = sum(Decimal(item['price']) * item['quantity'] for item in self.cart.values())
+        return str(total)
 
     def clear(self):
         del self.session[settings.CART_SESSION_ID]

@@ -46,10 +46,34 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Статус')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='online', verbose_name='Способ оплаты')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Общая сумма')
-    shipping_address = models.TextField(verbose_name='Адрес доставки')
+    
+    # Поля адреса
+    city = models.CharField(max_length=100, verbose_name='Город', default='')
+    street = models.CharField(max_length=200, verbose_name='Улица', default='')
+    house = models.CharField(max_length=20, verbose_name='Дом', default='')
+    entrance = models.CharField(max_length=10, blank=True, null=True, verbose_name='Подъезд')
+    apartment = models.CharField(max_length=10, blank=True, null=True, verbose_name='Квартира')
+    
+    # Дополнительные поля
     phone = models.CharField(max_length=20, verbose_name='Телефон')
+    comment = models.TextField(blank=True, null=True, verbose_name='Комментарий к заказу')
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    
+    @property
+    def full_address(self):
+        """Полный адрес для отображения"""
+        address_parts = [self.city, self.street, f"д. {self.house}"]
+        if self.entrance:
+            address_parts.append(f"под. {self.entrance}")
+        if self.apartment:
+            address_parts.append(f"кв. {self.apartment}")
+        return ", ".join(address_parts)
+    
+    def get_total_cost(self):
+        """Возвращает общую стоимость заказа"""
+        return sum(item.get_total_price() for item in self.items.all())
 
     class Meta:
         verbose_name = 'Заказ'
@@ -71,3 +95,7 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.quantity}x {self.product.name}'
+    
+    def get_total_price(self):
+        """Возвращает общую стоимость товара"""
+        return self.price * self.quantity

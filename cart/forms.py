@@ -31,11 +31,44 @@ class CheckoutForm(forms.Form):
     )
 
 class OrderForm(forms.ModelForm):
+    delivery_cost = forms.DecimalField(
+        required=False,
+        widget=forms.HiddenInput(),
+        initial=0
+    )
+    
     class Meta:
         model = Order
-        fields = ['shipping_address', 'phone', 'payment_method']
+        fields = ['city', 'street', 'house', 'entrance', 'apartment', 'phone', 'comment', 'payment_method']
         widgets = {
-            'shipping_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+7 (XXX) XXX-XX-XX'}),
+            'city': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: Москва'
+            }),
+            'street': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: ул. Тверская'
+            }),
+            'house': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: 1'
+            }),
+            'entrance': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: 2 (не обязательно)'
+            }),
+            'apartment': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: 5 (не обязательно)'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': '+7 (XXX) XXX-XX-XX'
+            }),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Дополнительная информация для курьера (не обязательно)'
+            }),
             'payment_method': forms.RadioSelect(attrs={'class': 'form-check-input'})
         } 
